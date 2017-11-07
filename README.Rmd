@@ -1,0 +1,8 @@
+
+# Introduction to Open data science (IODS)
+
+Hello! I chose this course because it seemed like a great opportunity to learn the basic work process of open data science. I have been doing statistical analysis for many years, but I felt that learning to use **R** would greatly benefit my work. Now that I have also taken my first steps with **GitHub**, I can say that it seems like a nice way to keep track of different versions of code when doing statistical analysis.
+
+### Course diary
+
+My *course diary* can be found [here](https://jannemik.github.io/IODS-project/).
