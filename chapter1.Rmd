@@ -1,11 +1,18 @@
 
-# Introduction to Open Data Science
+# Chapter 1: Introduction to Open Data Science
+<br>
+  
+In this course, we will learn to take advantage of the basic tools of **open data science**. They include:
 
-In this course, we will learn to take advantage of the basic tools of *open data science*. They include:
+* *R*
+* *RStudio*
+* *R Markdown*
+* *GitHub*
 
-* R
-* RStudio
-* R Markdown
-* GitHub
+My first thoughts when I found this course:
 
-My name is **Janne Mikkonen**. You can find my GitHub repository [here](https://github.com/jannemik/IODS-project)
+> I have been looking for something like this.
+
+**Datacamp** also seems like a nice learning platform becaue R is used through the browser and you can get immediate feedback.
+<br><br>
+My name is **Janne Mikkonen**. My GitHub repository can be found [here](https://github.com/jannemik/IODS-project).
