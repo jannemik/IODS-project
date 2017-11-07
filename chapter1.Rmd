@@ -9,6 +9,8 @@ In this course, we will learn to take advantage of the basic tools of **open dat
 * *R Markdown*
 * *GitHub*
 
+<br>
+
 My first thoughts when I found this course:
 
 > I have been looking for something like this.
