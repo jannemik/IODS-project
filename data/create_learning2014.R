@@ -62,6 +62,6 @@ learning2014 <- filter(learning2014, points > 0)
 
 #SAVE THE DATA
 
-setwd("~/Documents/GitHub/IODS-project")
+setwd("~/Documents/GitHub/IODS-project/data")
 write.csv(learning2014, file = "learning2014.csv", row.names = FALSE)
 learning2014 <- read.csv(file = "learning2014.csv")
