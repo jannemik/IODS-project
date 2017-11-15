@@ -23,7 +23,7 @@ I continue by exploring the data graphically. We can plot an overview of all var
 library(GGally)
 library(ggplot2)
 
-p <- ggpairs(learning2014, mapping = aes(alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
 p
 ```
 
