@@ -1,7 +1,81 @@
-# Insert chapter 2 title here
+# Regression and model validation
+<br>
+<br>
 
-*Describe the work you have done this week and summarize your learning.*
+## Pre-examination
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+I start by reading the "learning2014" data file that I have created before and exploring its dimensions and structure.
+<br>
+```{r, results = "hide"}
+setwd("~/Documents/GitHub/IODS-project/data")
+learning2014 <- read.csv(file = "learning2014.csv")
+```
+```{r}
+dim(learning2014)
+str(learning2014)
+```
+
+This data set includes 166 observations and 7 variables: gender, age, attitude, deep, stra, surf and points. Gender is a factor variable that sepates women and men. Age is an integer variable measured in years. Variables from attitude to surf are averages of several combined variables. Attitude measures global attitude towards statistics. Deep measures the dimension of deep learning, stra strategic learning and surf surface learning. Points indicates the total amount of exam points.
+
+I continue by exploring the data graphically. We can plot an overview of all variables in the data with the help of GGally and ggplot2 packages.
+
+```{r}
+library(GGally)
+library(ggplot2)
+
+p <- ggpairs(learning2014, mapping = aes(alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+p
+```
+
+There are more women than men in the data and most participants are in their 20s. Exam points has rather a strong positive correlation with attitude. The dimensions of deep learning, strategic learning and surface learning don't have strong positive correlations wit each other, which is a good thing because they should measure separate dimensions. Deep learning and surface learning have a relatively strong negative correlation, as could be expected. Attitude and learning dimensions have almost normal distributions, whereas for exam points the lowest end of the scale is slightly underrepresented.
+
+We can also look at the association between attitude and exam points by drawing a scatter plot. I willinclude separate regression lines for women and men to evaluate whether the associations differ by gender.
+
+```{r}
+p1 <- ggplot(learning2014, aes(x = attitude, y = points, col = gender))
+p2 <- p1 + geom_point()
+p3 <- p2 + geom_smooth(method = "lm")
+p4 <- p3 + ggtitle("Student's attitude versus exam points by gender")
+p4
+```
+
+There seems to be a clear association between attitude and points as could already be seen from the correlations. There is not much difference between women and men.
+<br>
+<br>
+
+## Estimation
+
+I will continue by estimating a multiple regression model for exam points with three explanatory variables: attitude, strategic learning and surface learning. These variables had the largest correlations with exam points.
+
+```{r}
+model1 <- lm(points ~ attitude + stra + surf, data = learning2014)
+summary(model1)
+```
+
+Attitude was the only varible to have a clear and statistically significant (at the conventional p<0.05 level) association with exam points: the increase of one point in attitude is associated with an average increase of 3.4 points. The p-value of p<0.001 tells us that there is a very small likelihood to observe an association this large if the zero hypothesis is true (i.e. relationship is zero in the population). Since the dimensions of strategic and surface learning showed no associations, I refit the model by excluding them.
+
+```{r}
+model2 <- lm(points ~ attitude, data = learning2014)
+summary(model2)
+```
+
+The coefficient of attitude remains about the same as before. An increase of one point in attitude is associated with an average increase of 3.5 points. The intercept of the model tells us that if attitude is zero, the estimated exam points is 11.6. Based on the multiple R-squared, we can conclude that attitude towards statistics explains around 19% of the variation in exam score.
+<br>
+<br>
+
+## Model validation
+
+I will next explore the assumptions of the linear regression model by plotting the residuals of model2 with three diagnostic plots.
+  
+```{r}
+par(mfrow = c(2,2))
+plot(model2, which = c(1, 2, 5))
+```
+
+The first graph, "Residuals vs Fitted" can be used to explore the assumption that the size of the errors does not depend on the values of the explanatory variables. Here, we have simply plotted the residuals (dots) with the model prediction (line). The variance of residuals seems mostly the same throughout the values of x, although it becomes slightly smaller with the largest values of x. Moreover, there are a few cases with unexpectedly low exam scores when x is between 24 and 26.
+
+QQ-plot is used for exploring the assumption that the errors are normally distributed. If the points follow the line drawn in the graph, we can conclude that the errors are normally distributed. In this case, there seems to be some small violation in the extremes of the distribution, but overall the assumption holds reasonably well.
+
+"Residuals vs leverage" plot helps to identify which observations have an unusually high impact on the model. This plot includes leverage, which indicates how much the observation's value on the predictor variable differs from its mean, and "Cook's distance", which is a measure of much the exclusion of that observation would change our model results. Problematic observations have both high leverage and high Cook's distance. In our situation, we cannot even see the dashed Cook's distance curves in the plot so there seems to be no problem with outliers.
+
+To conclude, we only found evidence for an association between attitude towards statistics and exam score, whereas strategic learning and deep learning did not seem to predict performance in the exam.
