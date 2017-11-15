@@ -2,7 +2,7 @@
 <br>
 <br>
 
-## Pre-examination
+## Pre-examination 
 
 I start by reading the "learning2014" data file that I have created before and exploring its dimensions and structure.
 <br>
