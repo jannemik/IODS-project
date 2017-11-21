@@ -63,8 +63,9 @@ Those attending extracurricular activities are slightly less common to have high
 ## Logistic regression
 
 ```{r}
-m <- glm(high_use ~ activities + address + goout + + sex, data = alc, family = "binomial")
+m <- glm(high_use ~ activities + address + goout + sex, data = alc, family = "binomial")
 OR <- coef(m) %>% exp %>% round(2)
 CI <- confint(m) %>% exp %>% round(2)
 cbind(OR, CI)
 ```
+
