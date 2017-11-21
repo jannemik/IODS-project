@@ -1,0 +1,70 @@
+# Chapter 3: Logistic regression
+<br>
+<br>
+
+## Reading the data
+
+I start by reading the "alc" data file that I created in the data wrangling excercise. This data file is a combination of two data sets measuring student performance in (1) mathematics and (2) portuguese language in two Portuguese secondary-level schools.
+
+```{r, results = "hide"}
+setwd("~/Documents/GitHub/IODS-project/data")
+alc <- read.csv(file = "alc.csv")
+```
+
+After loading the data, I continue by exploring its structure and dimensions.
+
+```{r}
+str(alc)
+dim(alc)
+```
+
+Our data includes 35 variables (columns) and 382 observations (rows). When creating the combined analysis data we have done the following adjustments: 
+
+* The variables not used for joining the two data sets have been combined by averaging (including the grade variables)
+* 'alc_use' is the average of alchohol consumption on workdays (Dalc) and on weekends (Walc)
+* The logical variable 'high_use' is TRUE if 'alc_use' is higher than 2 and FALSE otherwise
+
+## Hypotheses
+
+In this excercise I will examine the effect of sex, urban/rural residence, mother's education and attendance to extracurricular activities on the probability of high alcohol use. I hypothesize that
+
+* Boys are more likely to consume high amounts of alcohol than are girls
+* Those living in an urban address are more likely to consume high amounts of than those living in rural areas
+* Those going out with friends often are more likely to use high amounts of alcohol than those going out less frequently
+* Those attending extracurricular activities are less likely to consume high amounts of alcohol
+
+## Data exploration
+
+Next, I will explore the distributions of the outcome variable and the four chosen explanatory variables. I create a new data frame "alc5" that only includes these five variables. I start by exploring the distributions graphically.
+
+```{r, results = "hide"}
+library(tidyr); library(dplyr); library(ggplot2)
+
+alc5 <- select(alc, sex, address, goout, activities, high_use)
+```
+
+```{r}
+gather(alc5) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
+```
+
+Around half of the students attend extracurricular activities. Living in an urban area is more common than living in a rural area, and the extremes of going out with friends are less common than the middle of the scale. Girls are only slightly overrepresented in the sample. Around one third of the sample engages in high alcohol use.
+
+I continue by looking at the relative frequencies of low/high alcohol use by the four explanatory variables.
+
+```{r}
+table(alc5$activities, alc5$high_use) %>% prop.table(1) %>% round(2)
+table(alc5$address, alc5$high_use) %>% prop.table(1) %>% round(2)
+table(alc5$goout, alc5$high_use) %>% prop.table(1) %>% round(2)
+table(alc5$sex, alc5$high_use) %>% prop.table(1) %>% round(2)
+```
+
+Those attending extracurricular activities are slightly less common to have high alcohol consumption, as hypothesized. Opposite to the hypothesis, consuming high amounts of alcohol is less common for those living in urban areas. In line with my hypothesis, high alcohol use is more common among students going out with friends often and male students.
+
+## Logistic regression
+
+```{r}
+m <- glm(high_use ~ activities + address + goout + + sex, data = alc, family = "binomial")
+OR <- coef(m) %>% exp %>% round(2)
+CI <- confint(m) %>% exp %>% round(2)
+cbind(OR, CI)
+```
