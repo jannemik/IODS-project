@@ -28,10 +28,10 @@ Our data includes 35 variables (columns) and 382 observations (rows). When creat
 
 In this excercise I will examine the effect of sex, urban/rural residence, mother's education and attendance to extracurricular activities on the probability of high alcohol use. I hypothesize that
 
-* Boys are more likely to consume high amounts of alcohol than are girls
-* Those living in an urban address are more likely to consume high amounts of than those living in rural areas
-* Those going out with friends often are more likely to use high amounts of alcohol than those going out less frequently
-* Those attending extracurricular activities are less likely to consume high amounts of alcohol
+* Boys are more likely to consume high amounts of alcohol than are girls.
+* Those living in an urban address are more likely to consume high amounts of than those living in rural areas due to better access to alcohol.
+* Those going out with friends often are more likely to use high amounts of alcohol than those going out less frequently because alcohol is often used with friends.
+* Those attending extracurricular activities are less likely to consume high amounts of alcohol because these students are more study-oriented and thus have other things to do.
 
 ## Data exploration
 
@@ -62,10 +62,79 @@ Those attending extracurricular activities are slightly less common to have high
 
 ## Logistic regression
 
+I move on to estimating a logistic regression model with high alcohol use as the outcome variable and activities, address, going out with friends and sex as explanatory variables.
+
 ```{r}
-m <- glm(high_use ~ activities + address + goout + sex, data = alc, family = "binomial")
+m <- glm(high_use ~ activities + address + goout + sex, data = alc5, family = "binomial")
+summary(m)
 OR <- coef(m) %>% exp %>% round(2)
 CI <- confint(m) %>% exp %>% round(2)
 cbind(OR, CI)
 ```
 
+All explanatory variables were statistically significantly (p<0.05 and none of the 95% confidence intervals overlapped 1) associated with high alcohol use. The odds of high use for children who participated in extracurricular activities were 0.60-fold when compared with students who did not participate. In other words, this means that the propability of high use was lower among children who participated in extracurricular activities. Similarly, urban residence was associated with lower odds of high alcohol use and male sex with higher odds of high alcohol use. The frequency of going out with friends was a numeric varible in our data: for a one-unit increase in the frequency of going, increase in the odds of high alcohol use was 2.56-fold.
+
+Overall, our hypotheses related extracurricular activities, going out with friends and sex were supported by the logistic regression analysis. On the other hand, I hypothesized that urban residence would be associated with higher propability of high alcohol use, while in the analysis urban residence was in fact associated with much lower odds high use.
+
+## Predictive power
+
+Next, I will explore the predictive power of my logistic model where all explanatory variables were clearly associated with the odds of high alcohol use. I begin by creating a 2x2 table, which shows the numbers of correct and false predictions.
+
+```{r}
+# predict() the probability of high_use
+probabilities <- predict(m, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc5 <- mutate(alc5, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc5 <- mutate(alc5, prediction = probability > 0.5)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc5$high_use, prediction = alc5$prediction)
+```
+
+We can see that for 245 cases the model correctly predicted that they do not use high amounts of alcohol and for 43 cases that they do have high alcohol use. On the other hand, 71 cases were incorrectly classified as not-high-users while in reality they were high-users.
+
+I continue by (1) creating a graph of the actual cases and predictions of high use, (2) a propability table of the predictions and finally (3) a function calculating the number of incorrect predictions.
+
+```{r}
+# initialize a plot of 'high_use' versus 'probability' in 'alc'
+g <- ggplot(alc5, aes(x = probability, y = high_use, col = prediction))
+
+# define the geom as points and draw the plot
+g + geom_point()
+```
+
+```{r}
+# tabulate the target variable versus the predictions
+table(high_use = alc5$high_use, prediction = alc5$prediction) %>% prop.table() %>% addmargins() %>% round(2)
+```
+
+```{r}
+# define a loss function (mean prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func(class = alc5$high_use, prob = alc5$probability)
+```
+
+Looking at the graph, we can see that there were quite many cases who were predicted to have low propability of high alcohol use but were still high users. Around 19% of predictions were incorrect in that way, while only 6% of cases were incorrectly predicted to have high use when in reality they did not have. Overall, around one fourth of cases were incorrectly classified on account of their alcohol use. This result is definitely better than tossing a coin and quite good actually given that we only had four explanatory varibles in the model. At the same time, one fourth is still pretty large a proportion of false predictions and could probably be improved by including more variables.
+
+## Cross-validation
+
+Using the above-defined loss function I can perform a ten-fold cross-validation on my model. In this cross-validations the analysis data is first divided into ten equal sized parts. Each part in turn acts a "testing data" while the other nine parts form a "training data". Training data is used for fitting the model while the testing data is used for testing it. Based, on the ten tests we can calculate the average number of wron predictions.
+
+```{r}
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc5, cost = loss_func, glmfit = m, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+
+In the ten-fold cross-validation the predition error was around one fourth i.e. about the same as the prediction error of our original full-sample model. My prediction error was also about the same as in the Datacamp excercise, although I mostly used a different set of explanatory variables.
