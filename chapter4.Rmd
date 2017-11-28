@@ -52,7 +52,7 @@ boston_scaled <- as.data.frame(boston_scaled)
 summary(boston_scaled)
 ```
 
-We can see that all variables have mean zero. The outlier cases can still be clearly seen. Next, I will create a categorical variable indicating the quantiles of the (scaled) crime rate.
+We can see that all variables have mean zero. The outlier cases can still be clearly seen. Next, I will create a categorical variable indicating the quantiles of the (scaled) crime rate. This variable replaces the original continuous variable.
 
 ```{r}
 # create a quantile vector of crim and print it
@@ -62,11 +62,20 @@ bins
 # create a categorical variable 'crime'
 crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
 summary(crime)
+
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
 ```
 
-Everything seems to be fine with the categorical variable so I will continue by splitting the original data set to test (80%) and train (20%) data sets. The training of the model is done with the train set and prediction on new data is done with the test set. In order to examine how well our model performs in predicting crime rate, I save the correct classes of the test data as a separate object.
+Everything seems to be fine with the categorical variable so I will continue by splitting the original data set to test (80%) and train (20%) data sets. The training of the model is done with the train set and prediction on new data is done with the test set.
 
 ```{r}
+# number of rows in the Boston dataset 
+n <- nrow(boston_scaled)
+
 # choose randomly 80% of the rows
 ind <- sample(n,  size = n * 0.8)
 
@@ -75,7 +84,45 @@ train <- boston_scaled[ind,]
 
 # create test set 
 test <- boston_scaled[-ind,]
+```
 
+## Linear discriminant analysis
+
+Now, I am ready to fit the linear discriminant analysis on the train set. This analysis finds the linear combination of the variables that separate the target variable classes. The categorical crime rate will serve as the target variable and all the other variables in the dataset as predictor variables.
+
+```{r}
+# linear discriminant analysis
+lda.fit <- lda(crime ~ ., data = train)
+
+# print the lda.fit object
+lda.fit
+```
+
+```{r}
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 2)
+```
+
+The plot reveals that the suburbs of crime rate are the most distinctive with regards to our selection of predictor variables. Accessibility to radial highways is the most distinctive feature of the high crime rate areas. Med high and med low are the most overlapping.
+
+In order to examine how well our model performs in predicting crime rate, I save the correct classes of the test data as a separate object.
+
+```{r}
+library(dplyr)
 # save the correct classes from test data
 correct_classes <- test$crime
 
@@ -83,3 +130,73 @@ correct_classes <- test$crime
 test <- dplyr::select(test, -crime)
 ```
 
+Now I can predict the classes with the LDA model on the test data and compare the predictions results with the actual categories.
+
+```{r}
+# predict classes with test data
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+All suburbs with high crime rate were correctly predicted. This is not a surprise given that high crime rate suburbs turned out so disctinctive in the original analysis. The model had more difficulties in separating med-high suburbs from med-low. Low and med low-were somewhat overlapping in the original analysis, and also in this test some of the low crime suburbs were classified as med-low. Despite this, most predictions were correct.
+
+## K-means clustering
+
+Next, I will perform a K-means clustering analysis on the Boston data set. I will first reload and scale the data calculate the Euclidean distances between the observations.
+
+```{r}
+data("Boston")
+
+# center and standardize variables
+boston_scaled <- scale(Boston)
+
+# change the object to data frame
+boston_scaled <- as.data.frame(boston_scaled)
+
+# euclidean distance matrix
+dist_eu <- dist(Boston)
+
+# look at the summary of the distances
+summary(dist_eu)
+```
+
+I begin the K-means clustering analysis by estimating four clusters. I will visualise some of the columns.
+
+```{r}
+# k-means clustering
+km <-kmeans(Boston, centers = 4)
+
+# plot the Boston dataset with clusters
+pairs(Boston[5:10], col = km$cluster)
+```
+
+Four clusters could be too much as it is difficult distinguish them in the plot. It is possible to identify the optimal amount of clusters by looking at how the total of within cluster sum of squares (WCSS) behaves when the number of cluster changes.
+
+```{r}
+library(ggplot2)
+set.seed(123)
+
+# determine the number of clusters
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+It seems that already after the first cluster there is a clear drop in WCSS. Since WCSS still drops after the second cluster, I will estimate a two-cluster solution.
+
+```{r}
+# k-means clustering
+km <-kmeans(Boston, centers = 2)
+
+# plot the Boston dataset with clusters
+pairs(Boston[1:7], col = km$cluster)
+pairs(Boston[8:14], col = km$cluster)
+```
+
+The two-cluster solution is clearer to interpret than the original four-cluster solution. Accessibility to radial highways is once again one of those variables that define the clusters and full-value property-tax rate is another. These varibles probably identify the central areas of Boston. Also crime rate is one of the attributes that separate the clusters.
