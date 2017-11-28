@@ -1,0 +1,85 @@
+# Chapter 4: Clustering and classification
+<br>
+<br>
+
+## Reading the data
+
+I start by loading the Boston Housing Values data set used in the analysis. I will also explore its structure and dimensions.
+
+```{r}
+library(MASS)
+data("Boston")
+
+str(Boston)
+dim(Boston)
+```
+
+This data set contains 14 variables and 506 observations. The observations are suburbs within the Boston region and the varibles measure different attributes of these suburbs. I continue by looking at the distributions and correlations of the variables.
+
+```{r}
+summary(Boston)
+```
+
+```{r}
+library(tidyr)
+library(corrplot)
+# calculate the correlation matrix and round it
+cor_matrix<-cor(Boston) %>% round(2) 
+
+# print the correlation matrix
+cor_matrix
+
+# visualize the correlation matrix
+corrplot(cor_matrix, method="circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+```
+
+By looking at the distributions, we can see that there are some suburbs that clearly diverge from the general pattern. For instance, in one suburb the crime rate is 89 per capita (crim) while the median in Boston is only 0.26. A similar pattern can be seen for the proportion of residential land zoned for lots over 25,000 sq.ft. (zn), the proportion of blacks (black) and the median value of owner-occupied homes (medv).
+
+The correlation plot indicates which variables have the strongest positive (blue) and negative (red) correlations. Some of the strongest positive correlations can be found between full-property taxes (tax) and accessibility to radial highways (rad) as well as nitrogen oxides and the proportion of non-retail business. Distances to five employment centers (dist) in turn have strong negative correlations with nitrogen oxides and non-retail businesses. On the other hand, Charles River dummy varible does not show correlations with any other variables.
+
+## Modifications
+
+The variables need to be centered and standardized, i.e. scaled, for the classification and clustering analyses.
+
+```{r}
+# center and standardize variables
+boston_scaled <- scale(Boston)
+
+# change the object to data frame
+boston_scaled <- as.data.frame(boston_scaled)
+
+# summaries of the scaled variables
+summary(boston_scaled)
+```
+
+We can see that all variables have mean zero. The outlier cases can still be clearly seen. Next, I will create a categorical variable indicating the quantiles of the (scaled) crime rate.
+
+```{r}
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+bins
+
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+summary(crime)
+```
+
+Everything seems to be fine with the categorical variable so I will continue by splitting the original data set to test (80%) and train (20%) data sets. The training of the model is done with the train set and prediction on new data is done with the test set. In order to examine how well our model performs in predicting crime rate, I save the correct classes of the test data as a separate object.
+
+```{r}
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create train set
+train <- boston_scaled[ind,]
+
+# create test set 
+test <- boston_scaled[-ind,]
+
+# save the correct classes from test data
+correct_classes <- test$crime
+
+# remove the crime variable from test data
+test <- dplyr::select(test, -crime)
+```
+
