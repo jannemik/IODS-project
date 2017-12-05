@@ -91,8 +91,8 @@ human_ <- select(human_, -country)
 #Examine the data
 str(human_)
 
-#There are not 155 obs and 8 var
+#There are now 155 observations and 8 variables
 
 #Save the modified data (overwrite the old)
-write.csv(human, file = "human.csv", row.names = TRUE)
+write.csv(human_, file = "human.csv", row.names = TRUE)
 
