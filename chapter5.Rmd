@@ -1,0 +1,113 @@
+# Chapter 5: Dimensionality reduction techniques
+<br>
+<br>
+
+## Reading and exploring the data
+
+Our data set originagates from the  United Nations Development Programme. It is a combination of two separate data sets measuring human development and gender (in)equality for the same coutries. I have modified the data so that it only includes 8 indicators of human development / equality and only for those countries that did not have any missing values for these indicators. I start by reading the data and examining its structure and dimensions.
+
+```{r}
+setwd("~/Documents/GitHub/IODS-project/data")
+human <- read.csv(file = "human.csv", row.names = 1)
+str(human)
+dim(human)
+```
+
+We can see that there are 155 observations, i.e. countries, in the data. The 8 variables measure
+
+* % of women with at least secondary education (f2edu)
+* % of women in labour force (flabour)
+* Expected years of schooling (expedu)
+* Life expectance at birth (le)
+* GNI (gross national income) per capita (gni)
+* Maternal mortality ratio (matmort)
+* Adolescent birth rate (adolbirthrate)
+* Female share of parliamentary seats (parliament)
+
+I continue by examining the distributions of the variables and their relationships with each other.
+
+```{r}
+summary(human)
+```
+
+```{r}
+library(GGally)
+ggpairs(human)
+```
+
+If we look at the summary table, we can see that all variables vary strongly between the coutries. For instance, the proportion of women with a least secondary education ranges from 0.9% to 100% and female parliamentary representation from 0% to 57.5%. Some of the varibles have quite strong correlations with each other. For example, life expectancy is strongly associated with higher expected years of education and lower adolescent birth rate. On the other hand, female parliamentary representation does not show strong correlation with any of the other variables. Expected years of education is the only variable with somewhat normal distribution. For maternal mortality, there are a few countries with very high ratios but most countries fall to the lower end of the distribution.
+
+## Principal component analysis (PCA)
+
+Next, I will perform a principal component analysis on the data described above. I plot the results with a biplot that shows two of the most important principal components that were identified as x-axis and y-axis. 
+
+```{r}
+#The model
+pca_human <- prcomp(human)
+summary(pca_human)
+
+biplot(pca_human, choices = 1:2, cex = c(0.5, 0.8), col = c("grey40", "deeppink2"))
+```
+
+The plot is quite difficult to read as most countries fall to the top right corner of it. Because we have not standardized the variables, gross national income (GNI) is the most significant due to its large variance. In fact, the first principal component seems to account for 100% of the variance. GNI defines the first principal component, but it is difficult to say what defines the second, as the other arrows are not drawn. Let's rerun the analysis with scaled variables.
+
+```{r}
+#Scale
+human_std <- scale(human)
+
+#Estimation
+pca_human <- prcomp(human_std)
+s <- summary(pca_human)
+
+# rounded percetanges of variance captured by each PC
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(c("Underdevelopment", "Gender equality"), " (", pca_pr, "%)")
+
+biplot(pca_human, choices = 1:2, cex = c(0.5, 0.8), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+```
+
+After scaling the variables, the plot becomes much clearer to interpret. The biplot arrows reveal that the first principal compoment measures human development or, more precisely, underdevelopment (high maternal mortality, low life expectancy, low education etc), whereas the second component measures gender equality separate of human development (female parliamentary representation and female labour market participation). It is easy to see why because when we looked at correlations, parliament and female labour were the only variables that did not have strong correlations with the other variables. I have also labeled the principal components in the plot accordingly. The proportions of variance accounted for by the components are shown in parenthesis. Human development component accounted for more than half of the variance. Because the negative values of human development component indicate high development, the Nordic countries (highly developed and high gender equality) can be found in the top-left corner of the plot. Interestingly, there are quite many underdeveloped countries with high equality and vice versa.
+
+## Multiple correspondence analysis
+
+Next, I move up to multiple correspondence analysis. Here I will use a data set that contains the answers of a questionnaire on tea consumption. I start by loading the data and exploring its structure and dimensions.
+
+```{r}
+library(FactoMineR)
+data("tea")
+str(tea)
+dim(tea)
+```
+
+This tea consumption data set has 300 obsevations (survey participants) and 36 variables (questions). The variables include questions on backbround factors (sex, age etc), tea consumption habits (frequency, during lunch, at work etc), and tea-related notions and attitudes (healthiness, femininity, relaxation).
+
+To improve the clarity of the analysis, I will only select a subset of ten variables.
+
+```{r}
+library(dplyr)
+# column names to keep in the dataset
+keep_columns <- c("Tea", "sex", "where", "SPC", "friends", "healthy", "sophisticated", "frequency", "breakfast", "lunch")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- select(tea, one_of(keep_columns))
+```
+
+Next, I will perform a multiple correspondence analysis on these ten variables.
+
+```{r}
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+
+# visualize MCA
+plot(mca, invisible=c("var"), habillage = "quali")
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+From the summary of the model, we can see that none of the dimensions identified account for more than 10% of the variance in the data. The first plot shows how the individuals divide on the two dimensions, while the second plot shows how the variables relate to the dimensions. We can see that most individuals fall in the middle of the plot and there are no clear outlier cases. This could be related to the fact there are no strong dimensions in the data.
+
+When we look at the variable plot we can see some patterns in the data. Buying tea from tea shops, consuming green tea, consuming tea often and alone, and, interestingly, being a workman are found close to each other. On the other hand, being a student, consuming tea less frequently and considering tea unhealthy are also related as are being a senior and drinking tea in the morning. Nevertheless, there are few clearly identifiable patterns in the data when we include these ten variables.
