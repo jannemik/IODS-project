@@ -1,4 +1,7 @@
-#Data wrangling for the next week's data
+#Janne Mikkonen
+#Creating a combined data set of human development and gender inequality data files
+
+#EXERCISE 4
 
 #Read the "Human development" and "Gender inequality" data files
 
@@ -53,3 +56,43 @@ dim(human)
 #Save the data
 setwd("~/Documents/GitHub/IODS-project/data")
 write.csv(human, file = "human.csv", row.names = FALSE)
+
+#EXERCISE 5
+
+#Read the data file that was created in the last exercise
+human <- read.csv(file = "human.csv")
+
+#Transform the Gross National Income (GNI) variable to numeric 
+library(stringr)
+str(human$gni)
+human$gni <- str_replace(human$gni, pattern=",", replace ="") %>% as.numeric()
+
+#Remove unneeded columns
+library(dplyr)
+keep_columns <- c("country", "f2edu", "flabour", "expedu", "le", "gni", "matmort", "adolbirthrate", "parliament")
+human_ <- select(human, one_of(keep_columns))
+
+#Remove all rows with missing values
+complete.cases(human_)
+comp <- complete.cases(human_)
+human_ <- filter(human_, comp == TRUE)
+
+#Remove the observations which relate to regions instead of countries (there are 7 of them)
+tail(human_, n = 10)
+last <- nrow(human_) - 7
+human_ <- human_[1:last, ]
+
+#Add countries as row names
+rownames(human_) <- human_$country
+
+# remove the Country variable
+human_ <- select(human_, -country)
+
+#Examine the data
+str(human_)
+
+#There are not 155 obs and 8 var
+
+#Save the modified data (overwrite the old)
+write.csv(human, file = "human.csv", row.names = TRUE)
+
