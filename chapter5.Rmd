@@ -86,12 +86,11 @@ This tea consumption data set has 300 obsevations (survey participants) and 36 v
 To improve the clarity of the analysis, I will only select a subset of ten variables.
 
 ```{r}
-library(dplyr)
 # column names to keep in the dataset
 keep_columns <- c("Tea", "sex", "where", "SPC", "friends", "healthy", "sophisticated", "frequency", "breakfast", "lunch")
 
 # select the 'keep_columns' to create a new dataset
-tea_time <- select(tea, one_of(keep_columns))
+tea_time <- dplyr::select(tea, one_of(keep_columns))
 ```
 
 Next, I will perform a multiple correspondence analysis on these ten variables.
